@@ -18,18 +18,22 @@ import scala.io.StdIn
   * Created by fabiotiriticco on 17/04/2017.
   */
 
+case class GiveResponse(name: String)
+
+case class Response(text: String, amount: Int)
+
 object DigicafApp extends App {
   implicit val as = ActorSystem()
   implicit val am = ActorMaterializer()
-
-  val responseActor = as.actorOf(ResponseActor())
-
   implicit val responseFormat = Json.format[Response]
 
+  val requestActor = as.actorOf(RequestActor(), "requestActor")
+  val failResponse = Response("fail", 0)
+
   def route: Route = get {
-    val response = (responseActor ? Yo) (500.millis).mapTo[Response]
+    val response = (requestActor ? GiveResponse("ask")) (500.millis).mapTo[Response]
     onComplete(response) {
-      resp => complete(resp.getOrElse[Response](Response("fail", 1)))
+      resp => complete(resp.getOrElse[Response](failResponse))
     }
   }
 
